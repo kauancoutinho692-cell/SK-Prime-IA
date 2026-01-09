@@ -1,76 +1,191 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>SK Prime IA – Vendas Automáticas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body { font-family: Arial, sans-serif; background:#0f172a; color:#fff; margin:0; padding:0 }
-    header { padding:20px; background:#020617; text-align:center }
-    h1 { margin:0; color:#22c55e }
-    .container { padding:20px; max-width:600px; margin:auto }
-    .chat { background:#020617; border-radius:10px; padding:15px; height:400px; overflow-y:auto }
-    .msg { margin-bottom:10px }
-    .bot { color:#22c55e }
-    .user { color:#38bdf8; text-align:right }
-    input { width:100%; padding:12px; border-radius:8px; border:none; margin-top:10px }
-    button { width:100%; padding:12px; margin-top:10px; background:#22c55e; border:none; border-radius:8px; font-weight:bold }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>🤖 SK Prime IA</h1>
-    <p>Vendas Digitais 100% Automáticas</p>
-  </header>
+# ============================================================
+# IA AGENTE EXTREMA – NÍVEL STARTUP / SaaS
+# ============================================================
 
-  <div class="container">
-    <div class="chat" id="chat"></div>
-    <input type="text" id="input" placeholder="Digite aqui..." />
-    <button onclick="send()">Enviar</button>
-  </div>
+import datetime
+import random
 
-<script>
-const chat = document.getElementById('chat');
-let stage = 0;
+# =========================
+# CONFIGURAÇÕES GERAIS
+# =========================
+IA_NAME = "IA Suprema"
+OWNER_STYLE = "humano"
+GOAL = "vender ajudando"
 
-function botMsg(text){
-  chat.innerHTML += `<div class='msg bot'>🤖 ${text}</div>`;
-  chat.scrollTop = chat.scrollHeight;
+# =========================
+# MEMÓRIA COMPLETA
+# =========================
+class Memory:
+    def __init__(self):
+        self.short = []
+        self.long = []
+        self.profile = {
+            "nivel": "iniciante",
+            "emocao": "neutra",
+            "interesse": None,
+            "produto_indicado": None,
+            "tentativas": 0
+        }
+
+    def save(self, role, text):
+        entry = {
+            "role": role,
+            "text": text,
+            "time": datetime.datetime.now().strftime("%d/%m %H:%M")
+        }
+        self.short.append(entry)
+        self.long.append(entry)
+
+        if len(self.short) > 10:
+            self.short.pop(0)
+
+# =========================
+# PRODUTOS
+# =========================
+PRODUCTS = {
+    "basico": {
+        "nome": "Guia Do Zero ao Primeiro Pix",
+        "preco_original": 15.00,
+        "preco_atual": 5.99,
+        "beneficio": "sair do zero rápido"
+    },
+    "premium": {
+        "nome": "Projeto Renda Digital + IA",
+        "preco_original": 30.00,
+        "preco_atual": 15.00,
+        "beneficio": "estrutura completa + IA"
+    }
 }
-function userMsg(text){
-  chat.innerHTML += `<div class='msg user'>${text}</div>`;
-}
 
-botMsg("Opa 👋 Quer aprender a ganhar dinheiro com vendas digitais?");
-botMsg("Responda: 1️⃣ Nunca vendi | 2️⃣ Já tentei | 3️⃣ Já vendo");
+# =========================
+# ANALISADORES
+# =========================
+def analyze_intent(text):
+    t = text.lower()
+    if any(x in t for x in ["preço", "valor", "quanto"]):
+        return "PRICE"
+    if any(x in t for x in ["funciona", "vale", "confio"]):
+        return "DOUBT"
+    if any(x in t for x in ["não", "depois", "agora não"]):
+        return "BLOCK"
+    if any(x in t for x in ["quero", "comprar", "pix"]):
+        return "BUY"
+    return "CHAT"
 
-function send(){
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  if(!text) return;
-  userMsg(text);
-  input.value='';
+def analyze_emotion(text):
+    t = text.lower()
+    if any(x in t for x in ["medo", "receio", "desconfiado"]):
+        return "inseguro"
+    if any(x in t for x in ["quero", "animado", "vamos"]):
+        return "motivado"
+    return "neutra"
 
-  if(stage===0){
-    botMsg("Perfeito. Criamos um método simples pra destravar suas vendas do zero.");
-    botMsg("Você aprende perfil que vende, divulgação e fechamento.");
-    stage=1;
-  }
-  else if(stage===1){
-    botMsg("O acesso hoje custa apenas R$14,99, valor único.");
-    botMsg("Quer receber o acesso agora? Responda SIM");
-    stage=2;
-  }
-  else if(stage===2 && text.toLowerCase().includes('sim')){
-    botMsg("Perfeito ✅");
-    botMsg("Clique no link abaixo para pagar e receber o acesso automático:");
-    botMsg("👉 https://SEULINKDEPAGAMENTO.com");
-    stage=3;
-  }
-  else{
-    botMsg("Qualquer dúvida é só perguntar 👌");
-  }
-}
-</script>
-</body>
-</html>
+# =========================
+# CÉREBRO (DECISÃO)
+# =========================
+class Brain:
+    def __init__(self, memory):
+        self.memory = memory
+
+    def choose_product(self):
+        if self.memory.profile["nivel"] == "iniciante":
+            return "basico"
+        return "premium"
+
+    def generate_response(self, intent):
+        if intent == "PRICE":
+            return self.price()
+        if intent == "DOUBT":
+            return self.doubt()
+        if intent == "BLOCK":
+            return self.block()
+        if intent == "BUY":
+            return self.close()
+        return self.chat()
+
+    def chat(self):
+        return "Me conta, hoje o que mais te trava pra ganhar dinheiro online?"
+
+    def price(self):
+        b = PRODUCTS["basico"]
+        p = PRODUCTS["premium"]
+        return (
+            f"Hoje tenho duas opções:\n"
+            f"{b['nome']} → R${b['preco_atual']} (antes {b['preco_original']})\n"
+            f"{p['nome']} → R${p['preco_atual']} com IA inclusa"
+        )
+
+    def doubt(self):
+        return "Funciona pra quem aplica. O diferencial é simplicidade e direção clara."
+
+    def block(self):
+        return "Entendo. Mas continuar parado normalmente custa mais do que 5,99."
+
+    def close(self):
+        return "Perfeito. Quer que eu te mande o link agora ou prefere tirar mais alguma dúvida?"
+
+# =========================
+# HUMANIZAÇÃO
+# =========================
+class Humanizer:
+    openings = [
+        "Fala, tudo certo?",
+        "Oi, vi seu interesse e quis te chamar",
+        "Boa, posso te perguntar uma coisa rápida?"
+    ]
+
+    followups = [
+        "Fiquei pensando no que você falou",
+        "Só passei pra ver se conseguiu decidir",
+        "Quando quiser, me chama"
+    ]
+
+    @staticmethod
+    def opening():
+        return random.choice(Humanizer.openings)
+
+    @staticmethod
+    def followup():
+        return random.choice(Humanizer.followups)
+
+# =========================
+# IA AGENTE EXTREMA
+# =========================
+class IAExtrema:
+    def __init__(self):
+        self.memory = Memory()
+        self.brain = Brain(self.memory)
+
+    def start(self):
+        msg = Humanizer.opening()
+        self.memory.save("agent", msg)
+        return msg
+
+    def handle(self, user_msg):
+        self.memory.save("user", user_msg)
+
+        intent = analyze_intent(user_msg)
+        emotion = analyze_emotion(user_msg)
+        self.memory.profile["emocao"] = emotion
+
+        if "iniciante" in user_msg.lower():
+            self.memory.profile["nivel"] = "iniciante"
+        if "já vendo" in user_msg.lower():
+            self.memory.profile["nivel"] = "avancado"
+
+        response = self.brain.generate_response(intent)
+        self.memory.save("agent", response)
+        return response
+
+# =========================
+# EXECUÇÃO
+# =========================
+if __name__ == "__main__":
+    ia = IAExtrema()
+    print("IA:", ia.start())
+
+    while True:
+        user = input("Cliente: ")
+        if user.lower() in ["exit", "sair"]:
+            break
+        print("IA:", ia.handle(user))
