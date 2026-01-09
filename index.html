@@ -1,188 +1,162 @@
 # ============================================================
-# IA AGENTE EXTREMA – NÍVEL STARTUP / SaaS
+# IA AGENTE ULTRA++ — TODAS AS CAMADAS ATIVAS
 # ============================================================
 
-import datetime
-import random
+import sqlite3, datetime, uuid, random, time
 
-# =========================
-# CONFIGURAÇÕES GERAIS
-# =========================
-IA_NAME = "IA Suprema"
-OWNER_STYLE = "humano"
-GOAL = "vender ajudando"
+# ============================================================
+# BANCO DE DADOS
+# ============================================================
 
-# =========================
-# MEMÓRIA COMPLETA
-# =========================
-class Memory:
-    def __init__(self):
-        self.short = []
-        self.long = []
-        self.profile = {
-            "nivel": "iniciante",
-            "emocao": "neutra",
-            "interesse": None,
-            "produto_indicado": None,
-            "tentativas": 0
-        }
+db = sqlite3.connect("ia_ultra_plus.db")
+c = db.cursor()
 
-    def save(self, role, text):
-        entry = {
-            "role": role,
-            "text": text,
-            "time": datetime.datetime.now().strftime("%d/%m %H:%M")
-        }
-        self.short.append(entry)
-        self.long.append(entry)
+c.execute("""
+CREATE TABLE IF NOT EXISTS leads (
+    id TEXT PRIMARY KEY,
+    score INTEGER,
+    nivel TEXT,
+    personalidade TEXT,
+    ultima_interacao TEXT
+)
+""")
 
-        if len(self.short) > 10:
-            self.short.pop(0)
+c.execute("""
+CREATE TABLE IF NOT EXISTS logs (
+    id TEXT,
+    role TEXT,
+    message TEXT,
+    data TEXT
+)
+""")
 
-# =========================
+c.execute("""
+CREATE TABLE IF NOT EXISTS metrics (
+    tipo TEXT,
+    valor INTEGER
+)
+""")
+
+db.commit()
+
+# ============================================================
 # PRODUTOS
-# =========================
+# ============================================================
+
 PRODUCTS = {
-    "basico": {
-        "nome": "Guia Do Zero ao Primeiro Pix",
-        "preco_original": 15.00,
-        "preco_atual": 5.99,
-        "beneficio": "sair do zero rápido"
-    },
-    "premium": {
-        "nome": "Projeto Renda Digital + IA",
-        "preco_original": 30.00,
-        "preco_atual": 15.00,
-        "beneficio": "estrutura completa + IA"
-    }
+    "basico": {"nome": "Guia Do Zero ao Primeiro Pix", "preco": 5.99},
+    "premium": {"nome": "Projeto Renda Digital + IA", "preco": 15.00}
 }
 
-# =========================
+# ============================================================
 # ANALISADORES
-# =========================
-def analyze_intent(text):
+# ============================================================
+
+def intent(text):
     t = text.lower()
-    if any(x in t for x in ["preço", "valor", "quanto"]):
-        return "PRICE"
-    if any(x in t for x in ["funciona", "vale", "confio"]):
-        return "DOUBT"
-    if any(x in t for x in ["não", "depois", "agora não"]):
-        return "BLOCK"
-    if any(x in t for x in ["quero", "comprar", "pix"]):
-        return "BUY"
+    if any(x in t for x in ["preço", "valor", "quanto"]): return "PRICE"
+    if any(x in t for x in ["funciona", "vale", "confio"]): return "DOUBT"
+    if any(x in t for x in ["comprar", "pix", "quero"]): return "BUY"
+    if any(x in t for x in ["depois", "agora não"]): return "BLOCK"
     return "CHAT"
 
-def analyze_emotion(text):
+def personality(text):
     t = text.lower()
-    if any(x in t for x in ["medo", "receio", "desconfiado"]):
-        return "inseguro"
-    if any(x in t for x in ["quero", "animado", "vamos"]):
-        return "motivado"
-    return "neutra"
+    if "medo" in t or "desconfiado" in t: return "cauteloso"
+    if "rápido" in t or "direto" in t: return "direto"
+    return "normal"
 
-# =========================
-# CÉREBRO (DECISÃO)
-# =========================
-class Brain:
-    def __init__(self, memory):
-        self.memory = memory
+# ============================================================
+# LEAD SCORING
+# ============================================================
 
-    def choose_product(self):
-        if self.memory.profile["nivel"] == "iniciante":
-            return "basico"
-        return "premium"
+def lead_score(intent_type):
+    if intent_type == "BUY": return 30
+    if intent_type == "PRICE": return 20
+    if intent_type == "DOUBT": return 10
+    return 5
 
-    def generate_response(self, intent):
-        if intent == "PRICE":
-            return self.price()
-        if intent == "DOUBT":
-            return self.doubt()
-        if intent == "BLOCK":
-            return self.block()
-        if intent == "BUY":
-            return self.close()
-        return self.chat()
+# ============================================================
+# AGENTES
+# ============================================================
 
-    def chat(self):
-        return "Me conta, hoje o que mais te trava pra ganhar dinheiro online?"
+class SalesAgent:
+    def respond(self, intent_type, perfil):
+        if intent_type == "PRICE":
+            return "Tenho duas opções: 5,99 pra começar ou 15,00 com IA inclusa."
+        if intent_type == "DOUBT":
+            return "Funciona pra quem aplica. O foco é simplicidade."
+        if intent_type == "BUY":
+            return "Perfeito. Te mando o link agora?"
+        if intent_type == "BLOCK":
+            return "Entendo. Mas continuar parado costuma custar mais."
+        return "Me conta, o que mais te trava hoje?"
 
-    def price(self):
-        b = PRODUCTS["basico"]
-        p = PRODUCTS["premium"]
-        return (
-            f"Hoje tenho duas opções:\n"
-            f"{b['nome']} → R${b['preco_atual']} (antes {b['preco_original']})\n"
-            f"{p['nome']} → R${p['preco_atual']} com IA inclusa"
-        )
+class CopyAgent:
+    def offer(self, product):
+        return f"{product['nome']} por apenas R${product['preco']} — simples e direto."
 
-    def doubt(self):
-        return "Funciona pra quem aplica. O diferencial é simplicidade e direção clara."
+class FollowUpAgent:
+    def next_message(self):
+        return random.choice([
+            "Fiquei pensando no que você falou",
+            "Conseguiu decidir?",
+            "Quando fizer sentido, me chama"
+        ])
 
-    def block(self):
-        return "Entendo. Mas continuar parado normalmente custa mais do que 5,99."
+# ============================================================
+# IA PRINCIPAL
+# ============================================================
 
-    def close(self):
-        return "Perfeito. Quer que eu te mande o link agora ou prefere tirar mais alguma dúvida?"
-
-# =========================
-# HUMANIZAÇÃO
-# =========================
-class Humanizer:
-    openings = [
-        "Fala, tudo certo?",
-        "Oi, vi seu interesse e quis te chamar",
-        "Boa, posso te perguntar uma coisa rápida?"
-    ]
-
-    followups = [
-        "Fiquei pensando no que você falou",
-        "Só passei pra ver se conseguiu decidir",
-        "Quando quiser, me chama"
-    ]
-
-    @staticmethod
-    def opening():
-        return random.choice(Humanizer.openings)
-
-    @staticmethod
-    def followup():
-        return random.choice(Humanizer.followups)
-
-# =========================
-# IA AGENTE EXTREMA
-# =========================
-class IAExtrema:
+class IAUltraPlus:
     def __init__(self):
-        self.memory = Memory()
-        self.brain = Brain(self.memory)
+        self.id = str(uuid.uuid4())
+        self.sales = SalesAgent()
+        self.copy = CopyAgent()
+        self.follow = FollowUpAgent()
+        self.score = 0
 
-    def start(self):
-        msg = Humanizer.opening()
-        self.memory.save("agent", msg)
-        return msg
+        c.execute("INSERT OR IGNORE INTO leads VALUES (?, ?, ?, ?, ?)",
+                  (self.id, 0, "iniciante", "normal", now()))
+        db.commit()
 
-    def handle(self, user_msg):
-        self.memory.save("user", user_msg)
+    def log(self, role, msg):
+        c.execute("INSERT INTO logs VALUES (?, ?, ?, ?)",
+                  (self.id, role, msg, now()))
+        db.commit()
 
-        intent = analyze_intent(user_msg)
-        emotion = analyze_emotion(user_msg)
-        self.memory.profile["emocao"] = emotion
+    def handle(self, msg):
+        self.log("user", msg)
 
-        if "iniciante" in user_msg.lower():
-            self.memory.profile["nivel"] = "iniciante"
-        if "já vendo" in user_msg.lower():
-            self.memory.profile["nivel"] = "avancado"
+        i = intent(msg)
+        p = personality(msg)
+        self.score += lead_score(i)
 
-        response = self.brain.generate_response(intent)
-        self.memory.save("agent", response)
-        return response
+        c.execute("""
+        UPDATE leads SET score=?, personalidade=?, ultima_interacao=?
+        WHERE id=?
+        """, (self.score, p, now(), self.id))
+        db.commit()
 
-# =========================
+        resposta = self.sales.respond(i, p)
+        self.log("agent", resposta)
+
+        return resposta
+
+# ============================================================
+# UTIL
+# ============================================================
+
+def now():
+    return datetime.datetime.now().strftime("%d/%m %H:%M")
+
+# ============================================================
 # EXECUÇÃO
-# =========================
+# ============================================================
+
 if __name__ == "__main__":
-    ia = IAExtrema()
-    print("IA:", ia.start())
+    ia = IAUltraPlus()
+    print("IA: Fala, tudo certo?")
 
     while True:
         user = input("Cliente: ")
