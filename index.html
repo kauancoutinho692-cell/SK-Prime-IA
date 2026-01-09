@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>SK Prime IA – Vendas Automáticas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#0f172a; color:#fff; margin:0; padding:0 }
+    header { padding:20px; background:#020617; text-align:center }
+    h1 { margin:0; color:#22c55e }
+    .container { padding:20px; max-width:600px; margin:auto }
+    .chat { background:#020617; border-radius:10px; padding:15px; height:400px; overflow-y:auto }
+    .msg { margin-bottom:10px }
+    .bot { color:#22c55e }
+    .user { color:#38bdf8; text-align:right }
+    input { width:100%; padding:12px; border-radius:8px; border:none; margin-top:10px }
+    button { width:100%; padding:12px; margin-top:10px; background:#22c55e; border:none; border-radius:8px; font-weight:bold }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🤖 SK Prime IA</h1>
+    <p>Vendas Digitais 100% Automáticas</p>
+  </header>
+
+  <div class="container">
+    <div class="chat" id="chat"></div>
+    <input type="text" id="input" placeholder="Digite aqui..." />
+    <button onclick="send()">Enviar</button>
+  </div>
+
+<script>
+const chat = document.getElementById('chat');
+let stage = 0;
+
+function botMsg(text){
+  chat.innerHTML += `<div class='msg bot'>🤖 ${text}</div>`;
+  chat.scrollTop = chat.scrollHeight;
+}
+function userMsg(text){
+  chat.innerHTML += `<div class='msg user'>${text}</div>`;
+}
+
+botMsg("Opa 👋 Quer aprender a ganhar dinheiro com vendas digitais?");
+botMsg("Responda: 1️⃣ Nunca vendi | 2️⃣ Já tentei | 3️⃣ Já vendo");
+
+function send(){
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if(!text) return;
+  userMsg(text);
+  input.value='';
+
+  if(stage===0){
+    botMsg("Perfeito. Criamos um método simples pra destravar suas vendas do zero.");
+    botMsg("Você aprende perfil que vende, divulgação e fechamento.");
+    stage=1;
+  }
+  else if(stage===1){
+    botMsg("O acesso hoje custa apenas R$14,99, valor único.");
+    botMsg("Quer receber o acesso agora? Responda SIM");
+    stage=2;
+  }
+  else if(stage===2 && text.toLowerCase().includes('sim')){
+    botMsg("Perfeito ✅");
+    botMsg("Clique no link abaixo para pagar e receber o acesso automático:");
+    botMsg("👉 https://SEULINKDEPAGAMENTO.com");
+    stage=3;
+  }
+  else{
+    botMsg("Qualquer dúvida é só perguntar 👌");
+  }
+}
+</script>
+</body>
+</html>
